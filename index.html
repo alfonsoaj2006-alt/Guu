@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Attendance </title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f5f7fa;
+            transition: all 0.3s ease;
+        }
+        
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .status-present {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-absent {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Header Section -->
+    <header class="bg-indigo-600 text-white py-6 shadow-lg">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/7b16b074-ad40-4111-8144-1c7497f8ba96.png" alt="University logo with modern circular design in white and indigo colors" class="h-10 w-10 rounded-full" />
+                    <h1 class="text-2xl font-bold">Attendance </h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="current-date" class="font-medium"></span>
+                    <span id="current-time" class="font-medium"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <div class="max-w-4xl mx-auto">
+            <!-- Status Message -->
+            <div id="status-message" class="hidden mb-6 p-4 rounded-lg text-center"></div>
+            
+            <div class="flex flex-col md:flex-row gap-6">
+                <!-- Student Input Section -->
+                <div class="w-full md:w-1/2 bg-white rounded-xl shadow-md overflow-hidden p-6 card-hover">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">Mark Your Attendance</h2>
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label for="student-id" class="block text-sm font-medium text-gray-700 mb-1">Student Surname</label>
+                            <input type="text" id="student-id" placeholder="Enter your student surname" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                        </div>
+                        
+                        <div>
+                            <label for="course-select" class="block text-sm font-medium text-gray-700 mb-1">Strand</label>
+                            <select id="course-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition">
+                                <option value="">Select a course</option>
+                                
+                                <option value="ICT">ICT - Information Communications and Technology</option>
+                                <option value="HUMMS">HUMMS - Humanities and Social Challenges</option>
+                                <option value="ABM">ABM - Accountancy, Business and Managemeny</option>
+                               
+                            </select>
+                        </div>
+                        
+                        <div class="flex space-x-4 pt-2">
+                            <button id="present-btn" class="flex-grow bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-medium transition duration-300">
+                                Present
+                            </button>
+                            <button id="absent-btn" class="flex-grow bg-red-500 hover:bg-red-600 text-white py-3 rounded-lg font-medium transition duration-300">
+                                Absent
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Attendance Section -->
+                <div class="w-full md:w-1/2 bg-white rounded-xl shadow-md overflow-hidden p-6 card-hover">
+                    <h2 class="text-xl font-semibold mb-4 text-gray-800">Recent Attendance</h2>
+                    
+                    <div class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                        <!-- Attendance records will be added here dynamically -->
+                        <div id="no-records" class="text-center py-8 text-gray-400">
+                            <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/ba590fa4-bffd-4ddd-8e8c-7542fc0d9150.png" alt="Empty records illustration showing a clipboard with no entries" class="mx-auto h-24 mb-4" />
+                            <p>No attendance records yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6">
+        <div class="container mx-auto px-4 text-center text-sm">
+            <p>© 2023 University Attendance System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // DOM Elements
+        const studentIdInput = document.getElementById('student-id');
+        const courseSelect = document.getElementById('course-select');
+        const presentBtn = document.getElementById('present-btn');
+        const absentBtn = document.getElementById('absent-btn');
+        const statusMessage = document.getElementById('status-message');
+        const noRecordsDiv = document.getElementById('no-records');
+        const currentDateSpan = document.getElementById('current-date');
+        const currentTimeSpan = document.getElementById('current-time');
+        
+        // Attendance records array
+        let attendanceRecords = [];
+        
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load any existing records from local storage
+            const savedRecords = localStorage.getItem('attendanceRecords');
+            if (savedRecords) {
+                attendanceRecords = JSON.parse(savedRecords);
+                updateRecentAttendance();
+            }
+            
+            // Update clock
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            // Setup event listeners
+            setupEventListeners();
+        });
+        
+        function updateClock() {
+            const now = new Date();
+            currentDateSpan.textContent = now.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            currentTimeSpan.textContent = now.toLocaleTimeString('en-US', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function setupEventListeners() {
+            presentBtn.addEventListener('click', function() {
+                markAttendance('present');
+            });
+            
+            absentBtn.addEventListener('click', function() {
+                markAttendance('absent');
+            });
+            
+            // Also allow Enter key to submit
+            studentIdInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    markAttendance('present');
+                }
+            });
+        }
+        
+        function markAttendance(status) {
+            const studentId = studentIdInput.value.trim();
+            const course = courseSelect.value;
+            
+            // Validate inputs
+            if (!studentId) {
+                showStatusMessage('Please enter your student ID', 'error');
+                studentIdInput.focus();
+                return;
+            }
+            
+            if (!course) {
+                showStatusMessage('Please select a course', 'error');
+                courseSelect.focus();
+                return;
+            }
+            
+            // Create new record
+            const now = new Date();
+            const record = {
+                id: Date.now(),
+                studentId: studentId,
+                course: course,
+                status: status,
+                timestamp: now.toISOString(),
+                formattedTime: now.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })
+            };
+            
+            // Add to records
+            attendanceRecords.unshift(record);
+            
+            // Limit to 50 most recent records
+            if (attendanceRecords.length > 50) {
+                attendanceRecords.pop();
+            }
+            
+            // Save to local storage
+            localStorage.setItem('attendanceRecords', JSON.stringify(attendanceRecords));
+            
+            // Update UI
+            updateRecentAttendance();
+            showStatusMessage(`Attendance marked as ${status} for ${studentId}`, 'success');
+            
+            // Clear inputs
+            studentIdInput.value = '';
+            courseSelect.value = '';
+            studentIdInput.focus();
+        }
+        
+        function updateRecentAttendance() {
+            if (attendanceRecords.length === 0) {
+                noRecordsDiv.classList.remove('hidden');
+                return;
+            }
+            
+            noRecordsDiv.classList.add('hidden');
+            
+            const container = document.querySelector('.space-y-3');
+            container.innerHTML = '';
+            
+            attendanceRecords.forEach(record => {
+                const recordDiv = document.createElement('div');
+                recordDiv.className = `p-3 rounded-lg flex justify-between items-center fade-in ${record.status === 'present' ? 'status-present' : 'status-absent'}`;
+                recordDiv.innerHTML = `
+                    <div class="flex-1">
+                        <div class="font-medium">${record.studentId}</div>
+                        <div class="text-sm text-gray-600">${record.course}</div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-sm">${record.formattedTime}</span>
+                        <span class="px-2 py-1 text-xs rounded-full ${record.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                        </span>
+                    </div>
+                `;
+                container.appendChild(recordDiv);
+            });
+        }
+        
+        function showStatusMessage(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `mb-6 p-4 rounded-lg text-center font-medium`;
+            
+            if (type === 'success') {
+                statusMessage.classList.add('bg-green-100', 'text-green-800');
+            } else if (type === 'error') {
+                statusMessage.classList.add('bg-red-100', 'text-red-800');
+            }
+            
+            statusMessage.classList.remove('hidden');
+            
+            // Hide message after 3 seconds
+            setTimeout(() => {
+                statusMessage.classList.add('hidden');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Attendance Kiosk</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        }
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .shake {
+            animation: shake 0.5s;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        .custom-radio:checked {
+            background-color: #4f46e5;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+    <div class="container mx-auto px-4 min-h-screen">
+        <!-- Header -->
+        <header class="gradient-bg text-white py-6 rounded-b-xl shadow-lg mb-8">
+            <div class="flex justify-between items-center px-6">
+                <div class="flex items-center space-x-3">
+                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/6b261d42-59de-4ec5-9490-b6c9ba20f9d1.png" alt="Educational institution logo showing an open book with graduation cap above it in blue and white colors" />
+                    <h1 class="text-3xl font-bold">AttendanceKiosk Pro</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="staffLoginBtn" class="px-4 py-2 bg-white text-indigo-600 rounded-lg font-medium hover:bg-indigo-100 transition">Staff Login</button>
+                    <div id="currentDateTime" class="text-sm"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Left Sidebar - Quick Actions -->
+            <div class="bg-white rounded-xl shadow-md p-6 md:col-span-1">
+                <h2 class="text-xl font-bold mb-4 text-gray-800">Quick Actions</h2>
+                <div class="space-y-3">
+                    <button id="checkInBtn" class="w-full py-3 px-4 bg-green-500 hover:bg-green-600 text-white rounded-lg font-medium transition flex items-center justify-center">
+                        <i class="fas fa-sign-in-alt mr-2"></i> Check In
+                    </button>
+                    <button id="checkOutBtn" class="w-full py-3 px-4 bg-red-500 hover:bg-red-600 text-white rounded-lg font-medium transition flex items-center justify-center">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Check Out
+                    </button>
+                    <button id="visitorBtn" class="w-full py-3 px-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg font-medium transition flex items-center justify-center">
+                        <i class="fas fa-user-plus mr-2"></i> Visitor Registration
+                    </button>
+                    <button id="scheduleBtn" class="w-full py-3 px-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition flex items-center justify-center">
+                        <i class="fas fa-calendar-alt mr-2"></i> View Schedule
+                    </button>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <h3 class="text-lg font-semibold mb-3 text-gray-800">Kiosk Mode</h3>
+                    <div class="flex items-center space-x-4">
+                        <div class="flex-1">
+                            <select id="kioskModeSelect" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                <option value="selfService">Self-Service</option>
+                                <option value="staffed">Staffed</option>
+                                <option value="classBased">Class-Based</option>
+                            </select>
+                        </div>
+                        <button id="applyModeBtn" class="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg">
+                            Apply
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-8 pt-6 border-t border-gray-200">
+                    <h3 class="text-lg font-semibold mb-3 text-gray-800">Class Quick Access</h3>
+                    <div class="space-y-2">
+                        <button class="w-full py-2 px-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-left">Math 101</button>
+                        <button class="w-full py-2 px-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-left">Science Lab</button>
+                        <button class="w-full py-2 px-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-left">History 201</button>
+                        <button class="w-full py-2 px-3 bg-gray-100 hover:bg-gray-200 rounded-lg text-left">Art Studio</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Panel -->
+            <div class="bg-white rounded-xl shadow-md p-6 md:col-span-3">
+                <!-- Default View -->
+                <div id="defaultView" class="fade-in">
+                    <div class="flex flex-col items-center justify-center py-12">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/82f1828f-0cab-446b-a476-67d554eb42c7.png" alt="Digital attendance system interface with smiling users checking in via tablet with animated success indicators" class="mb-6 rounded-lg" />
+                        <h2 class="text-3xl font-bold text-center text-gray-800 mb-4">Welcome to AttendanceKiosk Pro</h2>
+                        <p class="text-gray-600 text-center max-w-2xl mx-auto mb-8">
+                            Our advanced attendance tracking system makes managing class attendance, visitor registration, and scheduling effortless. 
+                            Please select an option from the left menu to get started.
+                        </p>
+                        <div class="flex space-x-4">
+                            <button id="quickDemoBtn" class="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium">
+                                Watch Quick Demo
+                            </button>
+                            <button id="learnMoreBtn" class="px-6 py-3 border-2 border-indigo-500 text-indigo-500 hover:bg-indigo-50 rounded-lg font-medium">
+                                Learn More
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Ad Space -->
+                    <div class="mt-12 border-t border-gray-200 pt-6">
+                        <h3 class="text-lg font-semibold mb-4 text-gray-800">Sponsored By</h3>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                            <div class="bg-gray-50 p-4 rounded-lg flex items-center justify-center">
+                                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/577de699-6f39-4076-9c94-faebf3271a2e.png" alt="Logo of Education First with blue textbook icon and modern sans-serif typography" class="h-12 object-contain" />
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg flex items-center justify-center">
+                                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/b6c064d3-b312-4250-8f21-7c21cde41f08.png" alt="Classroom Supplies Inc. logo featuring pencil and ruler crossed in a shield shape with orange and white colors" class="h-12 object-contain" />
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg flex items-center justify-center">
+                                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/824dad77-577e-4c46-befa-e2bcf8cf1bf6.png" alt="TechEdu Solutions brand mark showing a lightbulb combining with a graduation cap in vibrant purple" class="h-12 object-contain" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Check In/Out Form (Hidden by default) -->
+                <div id="checkInOutForm" class="hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">
+                            <span id="formTitle">Check In</span> <span id="formForClass"></span>
+                        </h2>
+                        <button id="backToHomeBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition">
+                            <i class="fas fa-arrow-left mr-2"></i> Back
+                        </button>
+                    </div>
+
+                    <div id="formSuccess" class="hidden mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                        <i class="fas fa-check-circle mr-2"></i>
+                        <span id="successMessage">Successfully checked in for Math 101</span>
+                    </div>
+
+                    <div id="formError" class="hidden mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <span id="errorMessage">Error: User ID not found</span>
+                    </div>
+
+                    <form id="attendanceForm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label for="userId" class="block text-sm font-medium text-gray-700 mb-1">Student/Staff ID</label>
+                                <input type="text" id="userId" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter your ID" required />
+                            </div>
+                            <div>
+                                <label for="pin" class="block text-sm font-medium text-gray-700 mb-1">PIN</label>
+                                <input type="password" id="pin" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Enter your PIN" />
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Check In Method</label>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <input type="radio" id="methodId" name="method" value="id" class="custom-radio hidden" checked />
+                                    <label for="methodId" class="flex flex-col items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 transition">
+                                        <i class="fas fa-id-card text-3xl mb-2 text-indigo-600"></i>
+                                        <span>ID Card</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <input type="radio" id="methodQr" name="method" value="qr" class="custom-radio hidden" />
+                                    <label for="methodQr" class="flex flex-col items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 transition">
+                                        <i class="fas fa-qrcode text-3xl mb-2 text-indigo-600"></i>
+                                        <span>QR Code</span>
+                                    </label>
+                                </div>
+                                <div>
+                                    <input type="radio" id="methodNfc" name="method" value="nfc" class="custom-radio hidden" />
+                                    <label for="methodNfc" class="flex flex-col items-center p-4 border border-gray-300 rounded-lg cursor-pointer hover:border-indigo-500 transition">
+                                        <i class="fas fa-wifi text-3xl mb-2 text-indigo-600"></i>
+                                        <span>NFC Tag</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="qrScanSection" class="hidden mb-6">
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                <p class="text-gray-600 mb-4">Position your QR code in front of the camera</p>
+                                <div class="flex justify-center">
+                                    <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/f73ef0c9-00d4-47b8-aab7-669e16acb5aa.png" alt="Placeholder for qr code scanner interface with animated scanning effect and guide lines" id="qrScanner" class="rounded-lg" />
+                                </div>
+                                <button type="button" id="manualEntryBtn" class="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg">
+                                    <i class="fas fa-keyboard mr-2"></i> Enter Manually
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="nfcScanSection" class="hidden mb-6">
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
+                                <p class="text-gray-600 mb-4">Tap your NFC card or device to the reader</p>
+                                <div class="flex justify-center">
+                                    <i class="fas fa-wifi text-6xl text-indigo-600 animate-pulse"></i>
+                                </div>
+                                <button type="button" id="cancelNfcBtn" class="mt-4 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg">
+                                    <i class="fas fa-times mr-2"></i> Cancel
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end">
+                            <button type="submit" id="submitAttendanceBtn" class="px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-medium transition flex items-center">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                <span id="submitBtnText">Check In</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Visitor Registration Form (Hidden by default) -->
+                <div id="visitorForm" class="hidden">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">Visitor Registration</h2>
+                        <button id="backToHomeBtn2" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg transition">
+                            <i class="fas fa-arrow-left mr-2"></i> Back
+                        </button>
+                    </div>
+
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-info-circle text-yellow-500 text-xl"></i>
+                            </div>
+                            <div class="ml-3">
+                                <p class="text-sm text-yellow-700">
+                                    All visitors must register before entering the premises. Please complete this form and wear your issued badge at all times.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="visitorRegForm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div>
+                                <label for="visitorFirstName" class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
+                                <input type="text" id="visitorFirstName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
+                            </div>
+                            <div>
+                                <label for="visitorLastName" class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
+                                <input type="text" id="visitorLastName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
+                            </div>
+                            <div>
+                                <label for="visitorEmail" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                <input type="email" id="visitorEmail" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                            </div>
+                            <div>
+                                <label for="visitorPhone" class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                                <input type="tel" id="visitorPhone" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="visitorPurpose" class="block text-sm font-medium text-gray-700 mb-1">Purpose of Visit</label>
+                                <select id="visitorPurpose" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                    <option value="">Select purpose...</option>
+                                    <option value="meeting">Meeting with Staff</option>
+                                    <option value="visit_student">Visiting a Student</option>
+                                    <option value="delivery">Delivery</option>
+                                    <option value="interview">Interview</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2" id="visitorOtherPurposeDiv" style="display: none;">
+                                <label for="visitorOtherPurpose" class="block text-sm font-medium text-gray-700 mb-1">Specify Purpose</label>
+                                <input type="text" id="visitorOtherPurpose" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="visitorClass" class="block text-sm font-medium text-gray-700 mb-1">Class/Department Visiting (if applicable)</label>
+                               
